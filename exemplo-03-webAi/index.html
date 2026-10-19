@@ -1,0 +1,78 @@
+
+<!-- https://www.jsdelivr.com/package/npm/markdown -->
+<script src="https://cdn.jsdelivr.net/npm/markdown@0.5.0/lib/markdown.min.js"></script>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teste de IA no Chrome</title>
+</head>
+<body>
+  <h1>Teste de IA local</h1>
+  <button id="testar">Testar IA</button>
+  <pre id="resultado">Clique no botão para testar.</pre>
+
+  <script>
+    document.getElementById("testar").addEventListener("click", async () => {
+      const resultado = document.getElementById("resultado");
+
+      try {
+        if (!("LanguageModel" in self)) {
+          resultado.textContent =
+            "API indisponível. Verifique a versão e o suporte do Chrome.";
+          return;
+        }
+
+        resultado.textContent = "Verificando disponibilidade...";
+
+        const status = await LanguageModel.availability();
+        resultado.textContent = "Disponibilidade: " + status;
+
+        if (status === "unavailable") {
+          return;
+        }
+
+        resultado.textContent += "\nCriando sessão...";
+
+        const initialPrompts = [
+            {
+                role: 'system',
+                content: `Você é um assistente de IA que responde de forma clara e objetiva.`
+            }
+        ]
+
+        const session = await LanguageModel.create({
+            expectedInputLanguages: ["pt"],
+            temperature: 0,
+            topK: 5,
+            initialPrompts,
+        })
+
+        resultado.textContent += "\nPerguntando ao modelo...";
+
+        // const resposta = await session.prompt(
+        //   "Responda em português: diga olá e explique brevemente o que é IA."
+        // );
+
+         const responseStream = await session.promptStreaming([
+            {
+                role: 'user',
+                content: "quem inventou o javascript?"
+            }
+        ])
+
+        let fullText = ""
+        for await (const token of responseStream) {
+            fullText += token;
+        }
+        resultado.textContent += "\n\nResposta:\n" + fullText;
+        session.destroy();
+      } catch (erro) {
+        resultado.textContent =
+          "Erro: " + erro.name + "\n" + erro.message;
+      }
+    });
+  </script>
+</body>
+</html>
